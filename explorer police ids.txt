@@ -1,0 +1,22 @@
+explorer police ids
+
+
+4c seatbelt/airbag
+78 steering loss meesgae
+156 coolant temp
+179 milage appeared + milage increment
+171 gear
+191 langage/units
+20a tow/haul light
+261 off road/awd messages
+38a backup beeper i think
+38d key factory lock code and other key messages
+3aa more beeping
+3b2 lights and doors status
+3bc dimmer
+3b3 ignition status
+3c3 alarm and highbeams
+3d0 child safelty lock
+brake/tc 416
+421 mil/oil pressure
+

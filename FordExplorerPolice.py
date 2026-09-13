@@ -8,12 +8,10 @@ import threading
 import tkinter as tk
 from datetime import datetime
 
-
-bus = can.interface.Bus(channel='com3', bustype='slcan', bitrate=500000)
+bus = can.interface.Bus(channel='/dev/tty.usbmodem343E385A33351', bustype='slcan', bitrate=500000)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('127.0.0.1', 44444))
     
-# Track time for each function separately
 start_time_50ms = time.time()
 start_time_10ms = time.time()
 start_time_5s = time.time()
@@ -24,47 +22,49 @@ leftpad_down = False
 leftpad_up = False
 leftpad_ok = False
 
-
 id_counter = 0
 
+test_mode = False
 
-test_mode = True
-
-rpm = 2000
-mpgval = 0
-speed = 20
-coolant_temp = 120
-oil_temp = 120
+rpm = 3500
+speed = 70
+coolant_temp = 90
+oil_temp = 90
 fuel = 50
-throttle = 0
 gear = 1
-
 left_directional = False
 right_directional = False
-tc = False
-abs = False
+tc_active = False
+tc_off = False
+abs_active = False
 battery = False
 handbrake = False
 highbeam = False
-auto_highbeam = False
-park_light = False
 
-
-tpms = False #tbd
-cruise_control = False # tbd
-cruise_control_speed = 80 # tbd
-foglight = False
-rear_foglight = False
-parking_lights = False 
-check_engine = False
+front_left_door = False
+front_right_door = False
+rear_right_door = False
+rear_left_door = False
 hood = False
 trunk = False
-front_left = 30
-front_right = 30
-rear_left = 30
-rear_right = 30
+
+tpms = False
+cruise_control = False
+cruise_control_speed = 80
+foglight = False
+parking_lights = False 
+check_engine = False
+front_left_tire = 30
+front_right_tire = 30
+rear_left_tire = 30
+rear_right_tire = 30
 airbag = False
 seatbelt = False
+
+oil_life = 200 # oil_life/2 = percentage it will show
+gear_position = 0x60 #0x20 = R, 0x40 = N, 0x60 = D, 0xa0 = L
+low_oil_pressure = False
+handbrake_warning = False
 
 def decode_outgauge(packet):
     global rpm
@@ -128,8 +128,8 @@ def recv_outgauge():
             test_mode = False
 
 # Function to toggle variable values
-def toggle_var(var):
-    globals()[var] = not globals()[var]
+def toggle_var(var, value):
+    globals()[var] = value
 
 # GUI setup
 def gui_thread():
@@ -137,39 +137,38 @@ def gui_thread():
     root.title("Ford Edge 2011")
 
     
-    leftpad_up = tk.Button(root, text=f"L UP")
-    leftpad_up.grid(row=0, column=1)
-    leftpad_up.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_up"))
-    leftpad_up.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_up"))
+    leftpad_up_button = tk.Button(root, text=f"L UP")
+    leftpad_up_button.grid(row=0, column=1)
+    leftpad_up_button.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_up", True))
+    leftpad_up_button.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_up", False))
 
-    leftpad_down = tk.Button(root, text=f"L DOWN")
-    leftpad_down.grid(row=2, column=1)
-    leftpad_down.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_down"))
-    leftpad_down.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_down"))
+    leftpad_down_button = tk.Button(root, text=f"L DOWN")
+    leftpad_down_button.grid(row=2, column=1)
+    leftpad_down_button.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_down", True))
+    leftpad_down_button.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_down", False))
     
-    leftpad_left = tk.Button(root, text=f"L LEFT")
-    leftpad_left.grid(row=1, column=0)
-    leftpad_left.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_left"))
-    leftpad_left.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_left"))
+    leftpad_left_button = tk.Button(root, text=f"L LEFT")
+    leftpad_left_button.grid(row=1, column=0)
+    leftpad_left_button.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_left", True))
+    leftpad_left_button.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_left", False))
     
-    leftpad_right = tk.Button(root, text=f"L RIGHT")
-    leftpad_right.grid(row=1, column=2)
-    leftpad_right.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_right"))
-    leftpad_right.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_right"))
+    leftpad_right_button = tk.Button(root, text=f"L RIGHT")
+    leftpad_right_button.grid(row=1, column=2)
+    leftpad_right_button.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_right", True))
+    leftpad_right_button.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_right", False))
     
-    leftpad_ok = tk.Button(root, text=f"L OK")
-    leftpad_ok.grid(row=1, column=1)
-    leftpad_ok.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_ok"))
-    leftpad_ok.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_ok"))
+    leftpad_ok_button = tk.Button(root, text=f"L OK")
+    leftpad_ok_button.grid(row=1, column=1)
+    leftpad_ok_button.bind('<ButtonPress-1>', lambda event: toggle_var("leftpad_ok", True))
+    leftpad_ok_button.bind('<ButtonRelease-1>', lambda event: toggle_var("leftpad_ok", False))
 
-    root.mainloop()
+    return root
 
-gui_thread = threading.Thread(target=gui_thread)
-gui_thread.start()
-
+root = gui_thread()
 
 
 while True:
+    root.update()
     current_time = time.time()
     
     recv_outgauge()
@@ -182,15 +181,23 @@ while True:
             
 
             can.Message(arbitration_id=0x3b3, data=[0x40, 0x48, 0x02, 0x0f, 0x10, 0x05, 0x00, 0x22], is_extended_id=False), #ignition status
-            can.Message(arbitration_id=0x4c, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #airbag/seatbelt light
-            can.Message(arbitration_id=0x78, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #steering warnings
+            can.Message(arbitration_id=0x4c, data=[airbag*0x40,0,0,0,0,0,0,0], is_extended_id=False), #airbag/seatbelt light
+            can.Message(arbitration_id=0x77, data=[random.randint(0,255),random.randint(0,255),random.randint(0,255),random.randint(0,255),0,0,0,0], is_extended_id=False), #steering warnings
             can.Message(arbitration_id=0x156, data=[int(coolant_temp*1.6),50,0,0,91,0,0,0], is_extended_id=False), #coolant temp
-            can.Message(arbitration_id=0x171, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #gear
-            can.Message(arbitration_id=0x179, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #milage/fuel fill inlet warning/oil change warning
+            can.Message(arbitration_id=0x171, data=[4,gear_position,0,0,0,0,0,0], is_extended_id=False), #gear
+            can.Message(arbitration_id=0x179, data=[0,0,0,0,oil_life,0,0,0], is_extended_id=False), #milage/fuel fill inlet warning/oil change warning
             can.Message(arbitration_id=0x261, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #awd messages
-            can.Message(arbitration_id=0x3b2, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #doors/lights
-            can.Message(arbitration_id=0x416, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #brake/tc
-            can.Message(arbitration_id=0x421, data=[0,0,0,0,0,0,0,0], is_extended_id=False), #mil/oil press
+            can.Message(arbitration_id=0x3b2, data=[0,0,0,0,right_directional*8,0,(left_directional*64)+rear_left_door+(rear_right_door*2),(trunk*4)+(hood*8)+(front_right_door*16)+(front_left_door*32)], is_extended_id=False), #doors/lights
+            can.Message(arbitration_id=0x3b4, data=[tpms*4,0,0,0,0,0,0,0], is_extended_id=False), #tpms light and warnings
+
+            can.Message(arbitration_id=0x3b5, data=[0,int(front_left_tire*6.8),0,int(front_right_tire*6.8),0,int(rear_right_tire*6.8),0,int(rear_left_tire*6.8)], is_extended_id=False), #tire pressures
+            can.Message(arbitration_id=0x3c3, data=[highbeam*2,0,handbrake*0x10,handbrake_warning*4,0,0,0,0], is_extended_id=False), #highbeam, alarm
+            can.Message(arbitration_id=0x416, data=[0,0,0,0,0,(tc_active*2)+(tc_off*8),abs_active*0x40,0], is_extended_id=False), #brake/tc
+            can.Message(arbitration_id=0x421, data=[check_engine*4,0,low_oil_pressure*4,0,0,0,0,0], is_extended_id=False), #mil/oil press
+            can.Message(arbitration_id=0x42c, data=[0,battery*2,0x80,0,0,0,0,0], is_extended_id=False), #battery, cruise control
+
+            can.Message(arbitration_id=0x466, data=[0xff,0xff,0x00,0x22,0x50,0xff,0,0], is_extended_id=False), #compass
+
             can.Message(arbitration_id=0x202, data=[0,0,0,0,random.randint(0,255),0, speedval >>8,speedval & 0xff], is_extended_id=False),
             
             
@@ -229,32 +236,31 @@ while True:
 
     # Execute code every 5s
     elapsed_time_5s = current_time - start_time_5s
-    if elapsed_time_5s >= 3:
+    if elapsed_time_5s >= 0.5:
         id_counter += 1
         print(hex(id_counter))
         if test_mode:
-            
-
-            rpm = random.randint(1000,2000)
-            speed = random.randint(20,40)
+            if rpm == 3500:
+                rpm = 4500
+            else:
+                rpm = 3500
+            if speed == 70:
+                speed = 90
+            else:
+                speed = 70
 
             foglight = not foglight
             parking_lights = not parking_lights
-        
             check_engine = not check_engine
-        
-            hood = not hood
-            trunk = not trunk
             airbag = not airbag
             seatbelt = not seatbelt
+            tc_off = not tc_off
             left_directional = not left_directional
             right_directional = not right_directional
-            tc = not tc
-            abs = not abs
-            battery = not battery
+            tc_active = not tc_active
+            abs_active = not abs_active
             handbrake = not handbrake
             highbeam = not highbeam
-            rear_foglight = not rear_foglight
 
         start_time_5s = time.time()
 

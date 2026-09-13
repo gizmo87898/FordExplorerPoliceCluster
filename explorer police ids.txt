@@ -1,11 +1,38 @@
 explorer police ids
 
+done:
+3b2 (directionals, door status)
+416 (tc & abs)
+421 (mil, oil pressure warning)
+oil life
+speedo (a tiny bit off)
+tacho
+
+needs work:
+compass
+temp needle
+gear indicator
+
+doesnt work:
+cruise control
+brake light
+tpms light
+tire pressures
+park on gear indicator
+any sort of mpg shit
+outside temp (does this have it?)
+
+cant work:
+fuel level (done by potentimeter)
+windshield washer fluid (seperate wire)
+
 
 4c seatbelt/airbag
 78 steering loss meesgae
 156 coolant temp
-179 milage appeared + milage increment
 171 gear
+179 milage appeared + milage increment
+18a pre collision assist not available + front sensor not aligned
 191 langage/units
 20a tow/haul light
 261 off road/awd messages
@@ -13,10 +40,77 @@ explorer police ids
 38d key factory lock code and other key messages
 3aa more beeping
 3b2 lights and doors status
+3b5 tpms
 3bc dimmer
 3b3 ignition status
 3c3 alarm and highbeams
 3d0 child safelty lock
 brake/tc 416
 421 mil/oil pressure
+42c battery nd spinout warning
+42d lower engine power 
+431 trans temp warnings
+466 compass
 
+
+lights
+1 = rear left door
+2 = rear rigt door
+4 = factory mode
+64 = left directional
+
+4 = liftgate
+8 = hpod
+16 pass door
+32 driver door
+
+when 3b2 data[2] = 2, the dimming thing comes up. 
+
+416[1]
+0x20 check brake system
+0x40 service advancetrac
+
+416[5]
+0x
+2 = tc light on
+4 = tc slow blink
+6 = tc light fast blink
+8 = tc off light
+20 = for hdc, select gear
+60 = for hdc reduce speed to 20 or less
+80 = hdc active
+a0 hill decent driver resume control
+c0 hdc off system cooling
+e0 hdc fault
+
+42c[0]
+c = occupant sensor blocked remove objects & BLOCKED remove objects near pass. seat
+50 = set mph (CC)
+90 = green CC icon
+
+42c[1]
+1 battery light
+2 charging system service now
+3 charging system service soon
+6 turn power off to save battery
+d low battery features
+e battery state of charge low
+
+
+42c[6]
+c = spinout detected hazards activated
+
+3c3[0]
+1 vehicle alarm to stop alarm start vehicle
+2 highbeam
+
+3c3[3]
+4 park brake engaged warning
+40 brake fluid level low
+
+3c3[7]
+20 tailgate lock icon
+
+3b4[0]
+4 tpms light on
+8 tpms light blink
